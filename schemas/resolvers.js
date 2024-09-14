@@ -36,6 +36,11 @@ const resolvers = {
     },
     saveBook: async (parent, { bookData }, context) => {
       if (context.user) {
+        // Ensure bookData contains required fields
+        if (!bookData.bookId || !bookData.title || !bookData.description) {
+          throw new Error('Book data must include bookId, title, and description');
+        }
+
         const updatedUser = await User.findByIdAndUpdate(
           { _id: context.user._id },
           { $addToSet: { savedBooks: bookData } },
