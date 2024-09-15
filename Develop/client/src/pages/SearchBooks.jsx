@@ -1,17 +1,21 @@
 import { useState } from 'react';
-import { useMutation } from '@apollo/client';
+import { useMutation, useQuery } from '@apollo/client';
 import { Container, Col, Form, Button, Card, Row } from 'react-bootstrap';
 import { SAVE_BOOK } from '../utils/mutations';
+import { GET_ME } from '../utils/queries';
 import Auth from '../utils/auth';
 import { searchGoogleBooks } from '../utils/API';
-import { saveBookIds, getSavedBookIds } from '../utils/localStorage';
 
 const SearchBooks = () => {
   const [searchedBooks, setSearchedBooks] = useState([]);
   const [searchInput, setSearchInput] = useState('');
-  const [savedBookIds, setSavedBookIds] = useState(getSavedBookIds());
 
-  const [saveBook] = useMutation(SAVE_BOOK);
+  const [saveBook] = useMutation(SAVE_BOOK, {
+    refetchQueries: [{ query: GET_ME }],
+  });
+
+  const { data } = useQuery(GET_ME);
+  const userData = data?.me || {};
 
   const handleFormSubmit = async (event) => {
     event.preventDefault();
@@ -52,12 +56,9 @@ const SearchBooks = () => {
     }
 
     try {
-      const { data } = await saveBook({
+      await saveBook({
         variables: { bookData: { ...bookToSave } },
       });
-
-      setSavedBookIds([...savedBookIds, bookToSave.bookId]);
-      saveBookIds([...savedBookIds, bookToSave.bookId]);
     } catch (err) {
       console.error(err);
     }
@@ -69,7 +70,7 @@ const SearchBooks = () => {
         <Container>
           <h1>Search for Books!</h1>
           <Form onSubmit={handleFormSubmit}>
-            <Form.Row>
+            <Row>
               <Col xs={12} md={8}>
                 <Form.Control
                   name='searchInput'
@@ -85,7 +86,7 @@ const SearchBooks = () => {
                   Submit Search
                 </Button>
               </Col>
-            </Form.Row>
+            </Row>
           </Form>
         </Container>
       </div>
@@ -110,10 +111,10 @@ const SearchBooks = () => {
                     <Card.Text>{book.description}</Card.Text>
                     {Auth.loggedIn() && (
                       <Button
-                        disabled={savedBookIds?.some((savedBookId) => savedBookId === book.bookId)}
+                        disabled={userData.savedBooks?.some((savedBook) => savedBook.bookId === book.bookId)}
                         className='btn-block btn-info'
                         onClick={() => handleSaveBook(book.bookId)}>
-                        {savedBookIds?.some((savedBookId) => savedBookId === book.bookId)
+                        {userData.savedBooks?.some((savedBook) => savedBook.bookId === book.bookId)
                           ? 'This book has already been saved!'
                           : 'Save this Book!'}
                       </Button>
