@@ -7,7 +7,7 @@ import Auth from './utils/auth';
 
 // Apollo Client setup
 const httpLink = createHttpLink({
-  uri: '/graphql',
+  uri: '/api/graphql', // Ensure proxy settings in Vite.config.js are used correctly
 });
 
 const authLink = setContext((_, { headers }) => {

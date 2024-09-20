@@ -1,30 +1,43 @@
-const jwt = require('jsonwebtoken');
+import decode from 'jwt-decode';
 
-const secret = process.env.JWT_SECRET || 'mysecretsshhhhh';
-const expiration = process.env.JWT_EXPIRATION || '2h';
+class AuthService {
+  // Get user profile by decoding the token
+  getProfile() {
+    return decode(this.getToken());
+  }
 
-module.exports = {
-  authMiddleware: function ({ req }) {
-    let token = req.body.token || req.query.token || req.headers.authorization;
+  // Check if the user is logged in by checking if the token is valid
+  loggedIn() {
+    const token = this.getToken();
+    return !!token && !this.isTokenExpired(token);
+  }
 
-    if (req.headers.authorization) {
-      token = token.split(' ').pop().trim();
-    }
-
-    if (!token) {
-      return { user: null };
-    }
-
+  // Check if the token is expired
+  isTokenExpired(token) {
     try {
-      const { data } = jwt.verify(token, secret, { maxAge: expiration });
-      return { user: data };
-    } catch {
-      console.log('Invalid token');
-      return { user: null };
+      const decoded = decode(token);
+      return decoded.exp < Date.now() / 1000;
+    } catch (err) {
+      return false;
     }
-  },
-  signToken: function ({ username, email, _id }) {
-    const payload = { username, email, _id };
-    return jwt.sign({ data: payload }, secret, { expiresIn: expiration });
-  },
-};
+  }
+
+  // Get token from localStorage
+  getToken() {
+    return localStorage.getItem('id_token');
+  }
+
+  // Set token in localStorage
+  login(idToken) {
+    localStorage.setItem('id_token', idToken);
+    window.location.assign('/'); // Redirect after login
+  }
+
+  // Remove token from localStorage and log the user out
+  logout() {
+    localStorage.removeItem('id_token');
+    window.location.assign('/login');
+  }
+}
+
+export default new AuthService();
